@@ -8,7 +8,7 @@ title: About
   <h3>About</h3>
 </div>
 
-[Elveris](https://github.com/elveris) is an opinionated
+[Ayse Ceyhan Düzgün](https://github.com/alifiratari/website-ayseceyhan) is an opinionated
 ```js
 // syntax highlighting example
 function elveris() {
