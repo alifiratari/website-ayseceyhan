@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="apple-touch-icon" href="/pwa-192x192.png">
+  <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#00aba9">
+  <meta name="msapplication-TileColor" content="#00aba9">
+  <script>
+    (function () {
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+      const setting = localStorage.getItem('vueuse-color-scheme') || 'auto'
+      if (setting === 'dark' || (prefersDark && setting !== 'light'))
+        document.documentElement.classList.toggle('dark', true)
+    })()
+    // eslint-disable-next-line no-console
+    console.log('update testing')
+    // make the whole serviceworker process into a promise so later on we can
+    // listen to it and in case new content is available a toast will be shown
+    window.isUpdateAvailable = new Promise((resolve, reject) => {
+      // lazy way of disabling service workers while developing
+      if (
+        'serviceWorker' in navigator
+    && !['localhost', '127'].includes(location.hostname)
+      ) {
+        // register service worker file
+        navigator.serviceWorker
+          .register('service-worker.js')
+          .then((reg) => {
+            reg.onupdatefound = () => {
+              const installingWorker = reg.installing
+              installingWorker.onstatechange = () => {
+                switch (installingWorker.state) {
+                  case 'installed':
+                    if (navigator.serviceWorker.controller) {
+                      // new update available
+                      // eslint-disable-next-line no-console
+                      console.log('update')
+                      resolve(true)
+                    }
+                    else {
+                      // no update available
+                      // eslint-disable-next-line no-console
+                      console.log('no update')
+                      resolve(false)
+                    }
+                    break
+                }
+              }
+            }
+          })
+          .catch(err => console.error('[SW ERROR]', err))
+  }
+    })
+
+    // Update:
+    // this also can be incorporated right into e.g. your run() function in angular,
+    // to avoid using the global namespace for such a thing.
+    // because the registering of a service worker doesn't need to be executed on the first load of the page.
+  </script>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-6FVBS4NM0Z"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-6FVBS4NM0Z');
+  </script>
+</head>
+<body class="font-sans">
+  <div id="app"></div>
+  <script type="module" src="/src/main.ts"></script>
+  <noscript>This website requires JavaScript to function properly. Please enable JavaScript to continue.</noscript>
+</body>
+</html>

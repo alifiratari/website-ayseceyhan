@@ -1,0 +1,57 @@
+# This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: Node.js CI
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+
+    runs-on: [ubuntu-latest]
+
+    strategy:
+      matrix:
+        node-version: [16.x]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm cache clean --force
+      - run: rm -Rvf node_modules package-lock.json
+      - uses: pnpm/action-setup@v2
+        name: Install pnpm
+        id: pnpm-install
+        with:
+          version: 7
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - run: chmod -R a+rwx ./node_modules
+      - run: CI=false REACT_APP_API_URL=https://api.fortknoxster.com pnpm run build
+
+      - uses: jakejarvis/s3-sync-action@master
+        with:
+          args: --exclude '.git/*' --follow-symlinks --delete
+        env:
+          AWS_S3_BUCKET: elveris-public-html
+          AWS_ACCESS_KEY_ID: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+          SOURCE_DIR: dist
+          AWS_REGION: us-east-1 # optional: defaults to us-east-1
+
+      - name: invalidate cloudfront distribution and wait for completion
+        uses: muratiger/invalidate-cloudfront-and-wait-for-completion-action@master
+        env:
+          DISTRIBUTION_ID: ${{ secrets.PROD_CLOUDFRONT_DISTRIBUTION }}
+          PATHS: '/*'
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
